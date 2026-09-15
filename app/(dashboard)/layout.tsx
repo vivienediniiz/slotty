@@ -2,6 +2,7 @@ import Link from "next/link";
 
 const NAV_ITEMS = [
   { href: "/schedule", label: "Agendamento" },
+  { href: "/scheduled-posts", label: "Posts Agendados" },
   { href: "/connections", label: "Conexões" }
 ];
 

@@ -5,6 +5,34 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
+export async function GET(request: Request) {
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.email) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email }
+  });
+
+  if (!user) {
+    return NextResponse.json({ error: "User not found" }, { status: 404 });
+  }
+
+  const posts = await prisma.post.findMany({
+    where: { userId: user.id },
+    orderBy: { scheduledFor: "desc" },
+    include: {
+      media: { orderBy: { order: "asc" } },
+      channels: {
+        include: { socialAccount: true }
+      }
+    }
+  });
+
+  return NextResponse.json(posts);
+}
+
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {

@@ -1,0 +1,119 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import type { MediaItem } from "@/types";
+
+type ScheduledPost = {
+  id: string;
+  content: string;
+  scheduledFor: string;
+  status: "SCHEDULED" | "PUBLISHED" | "FAILED";
+  media: Array<{ url: string; type: string }>;
+  channels: Array<{ id: string; socialAccount: { platform: string; displayName: string }; status: string }>;
+};
+
+export default function ScheduledPostsPage() {
+  const [posts, setPosts] = useState<ScheduledPost[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    loadPosts();
+  }, []);
+
+  async function loadPosts() {
+    try {
+      const response = await fetch("/api/social/posts");
+      if (!response.ok) throw new Error("Falha ao carregar posts");
+      const data = await response.json();
+      setPosts(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Erro ao carregar");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  if (isLoading) {
+    return (
+      <main className="flex h-screen items-center justify-center">
+        <p className="text-brand-muted">Carregando posts...</p>
+      </main>
+    );
+  }
+
+  return (
+    <main className="flex h-screen flex-col">
+      <header className="border-b border-black/5 px-8 py-5">
+        <h1 className="text-xl font-bold">Posts Agendados</h1>
+        <p className="text-xs text-brand-muted">Acompanhe seus posts agendados para publicação</p>
+      </header>
+
+      <div className="flex-1 overflow-y-auto p-6">
+        {error && (
+          <div className="mb-4 rounded-card bg-red-50 p-4 text-sm text-red-700">
+            {error}
+          </div>
+        )}
+
+        {posts.length === 0 ? (
+          <div className="flex items-center justify-center py-12">
+            <p className="text-brand-muted">Nenhum post agendado. Comece criando um no painel de agendamento.</p>
+          </div>
+        ) : (
+          <div className="grid gap-4">
+            {posts.map((post) => (
+              <div key={post.id} className="rounded-card bg-white/40 p-6 shadow-soft">
+                <div className="mb-3 flex items-center justify-between">
+                  <div>
+                    <p className="font-medium text-brand-ink">{post.content.substring(0, 100)}</p>
+                    <p className="text-xs text-brand-muted">
+                      Agendado para {new Date(post.scheduledFor).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+                  <span
+                    className={`rounded-full px-3 py-1 text-xs font-medium ${
+                      post.status === "SCHEDULED"
+                        ? "bg-blue-100 text-blue-700"
+                        : post.status === "PUBLISHED"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                    }`}
+                  >
+                    {post.status === "SCHEDULED"
+                      ? "Agendado"
+                      : post.status === "PUBLISHED"
+                        ? "Publicado"
+                        : "Falha"}
+                  </span>
+                </div>
+
+                {post.media.length > 0 && (
+                  <div className="mb-3 grid grid-cols-4 gap-2">
+                    {post.media.map((m, i) => (
+                      <div key={i} className="aspect-square overflow-hidden rounded-lg bg-black/5">
+                        {m.type.toLowerCase().startsWith("image") ? (
+                          <img src={m.url} alt="" className="h-full w-full object-cover" />
+                        ) : (
+                          <video src={m.url} className="h-full w-full object-cover" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  {post.channels.map((ch) => (
+                    <span key={ch.id} className="rounded-full bg-brand-bg px-3 py-1 text-xs font-medium text-brand-ink">
+                      {ch.socialAccount.displayName} ({ch.socialAccount.platform})
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </main>
+  );
+}
