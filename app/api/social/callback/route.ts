@@ -38,6 +38,15 @@ async function fetchDisplayName(platform: string, accessToken: string): Promise<
       return data.username ? `@${data.username}` : null;
     }
 
+    if (platform === "LINKEDIN") {
+      // Endpoint padrão OpenID Connect (produto "Sign In with LinkedIn using OpenID Connect")
+      const res = await fetch("https://api.linkedin.com/v2/userinfo", {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      const data = await res.json();
+      return data.name || null;
+    }
+
     return null;
   } catch (err) {
     console.error(`Failed to fetch display name for ${platform}:`, err);
