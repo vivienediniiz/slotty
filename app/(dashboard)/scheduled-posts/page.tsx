@@ -1,8 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PlatformIcon } from "@/components/schedule/PlatformIcon";
-import type { MediaItem, Platform } from "@/types";
+import type { MediaItem } from "@/types";
 
 type ScheduledPost = {
   id: string;
@@ -139,10 +138,9 @@ export default function ScheduledPostsPage() {
 
                 <div className="flex flex-wrap gap-2">
                   {post.channels.map((ch) => (
-                    <div key={ch.id} className="flex items-center gap-2 rounded-full bg-brand-bg px-3 py-1.5 text-xs font-medium text-brand-ink">
-                      <PlatformIcon platform={ch.socialAccount.platform as Platform} className="h-4 w-4" />
-                      {ch.socialAccount.displayName}
-                    </div>
+                    <span key={ch.id} className="rounded-full bg-brand-bg px-3 py-1 text-xs font-medium text-brand-ink">
+                      {ch.socialAccount.displayName} ({ch.socialAccount.platform})
+                    </span>
                   ))}
                 </div>
               </div>
