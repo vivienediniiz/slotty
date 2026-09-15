@@ -28,6 +28,7 @@ export async function POST(request: Request) {
   // Se tiver credenciais reais e uma URL de autorização, usar OAuth real. Senão, usar mock
   if (config.appId && config.appSecret && config.authUrl) {
     const params = new URLSearchParams({
+      response_type: "code",
       client_id: config.appId,
       redirect_uri: getCallbackUrl(),
       scope: config.scope.join(","),
