@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { MediaItem } from "@/types";
+import { PlatformIcon } from "@/components/schedule/PlatformIcon";
+import type { MediaItem, Platform } from "@/types";
 
 type ScheduledPost = {
   id: string;
@@ -16,6 +17,7 @@ export default function ScheduledPostsPage() {
   const [posts, setPosts] = useState<ScheduledPost[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadPosts();
@@ -31,6 +33,28 @@ export default function ScheduledPostsPage() {
       setError(err instanceof Error ? err.message : "Erro ao carregar");
     } finally {
       setIsLoading(false);
+    }
+  }
+
+  async function cancelPost(postId: string) {
+    if (!confirm("Tem certeza que deseja cancelar este agendamento?")) return;
+
+    setDeletingId(postId);
+    try {
+      const response = await fetch(`/api/social/posts/${postId}`, {
+        method: "DELETE"
+      });
+
+      if (!response.ok) {
+        throw new Error("Falha ao cancelar publicação");
+      }
+
+      setPosts(posts.filter((p) => p.id !== postId));
+      alert("Publicação cancelada com sucesso!");
+    } catch (err) {
+      alert(`Erro ao cancelar: ${err instanceof Error ? err.message : "Tente novamente"}`);
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -64,32 +88,43 @@ export default function ScheduledPostsPage() {
           <div className="grid gap-4">
             {posts.map((post) => (
               <div key={post.id} className="rounded-card bg-white/40 p-6 shadow-soft">
-                <div className="mb-3 flex items-center justify-between">
-                  <div>
+                <div className="mb-4 flex items-start justify-between">
+                  <div className="flex-1">
                     <p className="font-medium text-brand-ink">{post.content.substring(0, 100)}</p>
                     <p className="text-xs text-brand-muted">
                       Agendado para {new Date(post.scheduledFor).toLocaleString("pt-BR")}
                     </p>
                   </div>
-                  <span
-                    className={`rounded-full px-3 py-1 text-xs font-medium ${
-                      post.status === "SCHEDULED"
-                        ? "bg-blue-100 text-blue-700"
+                  <div className="ml-4 flex items-center gap-3">
+                    <span
+                      className={`rounded-full px-3 py-1 text-xs font-medium ${
+                        post.status === "SCHEDULED"
+                          ? "bg-blue-100 text-blue-700"
+                          : post.status === "PUBLISHED"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {post.status === "SCHEDULED"
+                        ? "Agendado"
                         : post.status === "PUBLISHED"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                    }`}
-                  >
-                    {post.status === "SCHEDULED"
-                      ? "Agendado"
-                      : post.status === "PUBLISHED"
-                        ? "Publicado"
-                        : "Falha"}
-                  </span>
+                          ? "Publicado"
+                          : "Falha"}
+                    </span>
+                    {post.status === "SCHEDULED" && (
+                      <button
+                        onClick={() => cancelPost(post.id)}
+                        disabled={deletingId === post.id}
+                        className="rounded-lg bg-red-50 px-3 py-1 text-xs font-medium text-red-600 transition hover:bg-red-100 disabled:opacity-50"
+                      >
+                        {deletingId === post.id ? "Cancelando..." : "Cancelar"}
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {post.media.length > 0 && (
-                  <div className="mb-3 grid grid-cols-4 gap-2">
+                  <div className="mb-4 grid grid-cols-4 gap-2">
                     {post.media.map((m, i) => (
                       <div key={i} className="aspect-square overflow-hidden rounded-lg bg-black/5">
                         {m.type.toLowerCase().startsWith("image") ? (
@@ -104,9 +139,10 @@ export default function ScheduledPostsPage() {
 
                 <div className="flex flex-wrap gap-2">
                   {post.channels.map((ch) => (
-                    <span key={ch.id} className="rounded-full bg-brand-bg px-3 py-1 text-xs font-medium text-brand-ink">
-                      {ch.socialAccount.displayName} ({ch.socialAccount.platform})
-                    </span>
+                    <div key={ch.id} className="flex items-center gap-2 rounded-full bg-brand-bg px-3 py-1.5 text-xs font-medium text-brand-ink">
+                      <PlatformIcon platform={ch.socialAccount.platform as Platform} className="h-4 w-4" />
+                      {ch.socialAccount.displayName}
+                    </div>
                   ))}
                 </div>
               </div>
