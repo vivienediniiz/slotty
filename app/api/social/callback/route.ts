@@ -93,7 +93,7 @@ export async function GET(request: Request) {
 
     // Verifica se já existe conexão com essa plataforma
     const existing = await prisma.socialAccount.findFirst({
-      where: { userId: user.id, platform }
+      where: { userId: user.id, platform: platform as "INSTAGRAM" | "FACEBOOK" | "LINKEDIN" | "THREADS" }
     });
 
     if (existing) {
