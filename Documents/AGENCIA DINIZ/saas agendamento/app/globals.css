@@ -1,0 +1,98 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* -----------------------------------------------------------------------
+ * Slotty Design System — tokens
+ * Fonte única de verdade das cores/gradiente/fonte da marca. O
+ * tailwind.config.ts lê estas variáveis; não redefina os valores lá,
+ * mude aqui.
+ * --------------------------------------------------------------------- */
+:root {
+  --color-rose-81603: #F4F0E3;
+  --gradiente1: linear-gradient(135deg, #B780E7 22.67%, #F282B0 61.38%, #E56BB4 96.48%);
+
+  --color-ink: #1F1B24;
+  --color-muted: #8A8378;
+  --color-border: rgba(31, 27, 36, 0.08);
+}
+
+/* Fonte "Quache": ainda não temos o arquivo real. IMPORTANTE — usar
+ * `font-family: Quache, ...` sem um @font-face que a defina é arriscado:
+ * o CSS casa "Quache" com QUALQUER fonte já instalada no sistema operacional
+ * do usuário com esse nome (isso não depende de @font-face, é o
+ * comportamento padrão de resolução de font-family). Se, por coincidência,
+ * existir uma fonte de ícones/dingbats com esse nome na máquina, letras e
+ * números são silenciosamente trocados por glifos quebrados — comportamento
+ * que reproduzimos e confirmamos ao testar este layout.
+ *
+ * Por isso declaramos aqui um @font-face "placeholder" para "Quache" que
+ * aponta para fontes de sistema conhecidas e seguras. Isso faz o nome
+ * "Quache" resolver sempre para essas fontes — nunca para uma fonte local
+ * homônima e desconhecida — até o arquivo real da marca chegar. Quando tiver
+ * o .woff2 definitivo, troque o `src` abaixo por
+ * `url("/fonts/quache.woff2") format("woff2")`.
+ */
+@font-face {
+  font-family: "Quache";
+  src:
+    local("Segoe UI"),
+    local("Helvetica Neue"),
+    local("Arial");
+  font-weight: 400 700;
+  font-display: swap;
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background: var(--color-rose-81603);
+  color: var(--color-ink);
+  font-family: "Quache", ui-sans-serif, system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* Texto com o gradiente da marca (CTAs, títulos de destaque) */
+.text-gradient-brand {
+  background: var(--gradiente1);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+}
+
+/* Botão CTA com o gradiente da marca */
+.btn-gradient-brand {
+  background: var(--gradiente1);
+  color: #FFFFFF;
+  border-radius: 999px;
+  font-weight: 600;
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.btn-gradient-brand:hover {
+  opacity: 0.92;
+}
+
+.btn-gradient-brand:active {
+  transform: scale(0.98);
+}
+
+.btn-gradient-brand:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Scrollbar discreta para as colunas do painel de agendamento */
+.scrollbar-thin::-webkit-scrollbar {
+  width: 6px;
+}
+
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background: rgba(31, 27, 36, 0.15);
+  border-radius: 999px;
+}
