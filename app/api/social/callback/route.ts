@@ -125,3 +125,4 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL("/connections?error=server_error", request.url));
   }
 }
+
