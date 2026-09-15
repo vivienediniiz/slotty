@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { SOCIAL_CONFIG, getCallbackUrl } from "@/lib/social-config";
 
+export const dynamic = "force-dynamic";
+
 const PLATFORMS = ["INSTAGRAM", "FACEBOOK", "LINKEDIN", "THREADS"] as const;
 
 export async function POST(request: Request) {

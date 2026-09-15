@@ -4,6 +4,8 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { SOCIAL_CONFIG, getCallbackUrl } from "@/lib/social-config";
 
+export const dynamic = "force-dynamic";
+
 const MOCK_ACCOUNTS = {
   INSTAGRAM: { displayName: "@agenciadiniz" },
   FACEBOOK: { displayName: "Agência Diniz" },
