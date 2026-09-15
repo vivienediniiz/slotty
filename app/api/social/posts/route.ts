@@ -2,7 +2,6 @@ import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { schedulePostPublish } from "@/lib/queue";
 
 export const dynamic = "force-dynamic";
 
@@ -99,14 +98,8 @@ export async function POST(request: Request) {
     include: { media: true, channels: true }
   });
 
-  // Agendar publicação na Job Queue
-  if (post.scheduledFor) {
-    try {
-      await schedulePostPublish(post.id, user.id, new Date(post.scheduledFor));
-    } catch (err) {
-      console.error("Failed to schedule job:", err);
-    }
-  }
+  // A publicação será feita automaticamente pela Edge Function do Supabase
+  // quando o horário agendado chegar
 
   return NextResponse.json(post, { status: 201 });
 }
