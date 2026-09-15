@@ -1,76 +1,89 @@
-import { Queue, Worker, DelayedError } from "bullmq";
+import { Queue, Worker } from "bullmq";
 import { Redis } from "ioredis";
-
-// Configurar Redis
-const redis = new Redis({
-  host: process.env.REDIS_HOST || "localhost",
-  port: parseInt(process.env.REDIS_PORT || "6379"),
-  password: process.env.REDIS_PASSWORD,
-  retryStrategy: (times) => Math.min(times * 50, 2000)
-});
-
-export const publishQueue = new Queue("publish-posts", { connection: redis });
 
 export type PublishJobData = {
   postId: string;
   userId: string;
 };
 
-// Configurar worker
-export const publishWorker = new Worker(
-  "publish-posts",
-  async (job) => {
-    const { postId } = job.data as PublishJobData;
+let publishQueue: Queue | null = null;
+let publishWorker: Worker | null = null;
 
-    try {
-      // Chamar o endpoint de publicação
-      const response = await fetch(
-        `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/social/publish/${postId}`,
-        { method: "POST" }
-      );
+function getRedisConnection() {
+  return new Redis(process.env.REDIS_URL || "redis://localhost:6379", {
+    maxRetriesPerRequest: null,
+    enableReadyCheck: false,
+    enableOfflineQueue: true
+  });
+}
 
-      if (!response.ok) {
-        throw new Error(`Publication failed: ${response.statusText}`);
+async function initializeQueue() {
+  if (publishQueue) return publishQueue;
+
+  const connection = getRedisConnection();
+
+  publishQueue = new Queue("publish-posts", { connection });
+
+  // Inicializar worker apenas se não estamos em build time
+  if (typeof window === "undefined" && process.env.NODE_ENV === "production") {
+    initializeWorker(connection);
+  }
+
+  return publishQueue;
+}
+
+function initializeWorker(connection: Redis) {
+  if (publishWorker) return;
+
+  publishWorker = new Worker(
+    "publish-posts",
+    async (job) => {
+      const { postId } = job.data as PublishJobData;
+
+      try {
+        const response = await fetch(
+          `${process.env.NEXTAUTH_URL || "http://localhost:3000"}/api/social/publish/${postId}`,
+          { method: "POST" }
+        );
+
+        if (!response.ok) {
+          throw new Error(`Publication failed: ${response.statusText}`);
+        }
+
+        return { success: true, postId };
+      } catch (error) {
+        console.error(`Job failed for post ${postId}:`, error);
+        throw error;
       }
+    },
+    { connection }
+  );
 
-      return { success: true, postId };
-    } catch (error) {
-      console.error(`Job failed for post ${postId}:`, error);
-      throw error;
-    }
-  },
-  { connection: redis }
-);
+  publishWorker.on("completed", (job) => {
+    console.log(`✅ Job ${job.id} completed: ${job.data.postId}`);
+  });
 
-publishWorker.on("completed", (job) => {
-  console.log(`✅ Job ${job.id} completed: ${job.data.postId}`);
-});
-
-publishWorker.on("failed", (job, err) => {
-  console.error(`❌ Job ${job?.id} failed:`, err.message);
-});
+  publishWorker.on("failed", (job, err) => {
+    console.error(`❌ Job ${job?.id} failed:`, err.message);
+  });
+}
 
 export async function schedulePostPublish(postId: string, userId: string, scheduledFor: Date) {
+  const queue = await initializeQueue();
   const delayMs = scheduledFor.getTime() - Date.now();
 
   if (delayMs <= 0) {
-    // Se já passou, agendar imediatamente
-    await publishQueue.add(
-      "publish",
-      { postId, userId },
-      { priority: 10 }
-    );
+    await queue.add("publish", { postId, userId }, { priority: 10 });
   } else {
-    // Agendar para o horário específico
-    await publishQueue.add(
-      "publish",
-      { postId, userId },
-      { delay: delayMs }
-    );
+    await queue.add("publish", { postId, userId }, { delay: delayMs });
   }
 }
 
 export async function closeQueue() {
-  await publishWorker.close();
-  await publishQueue.close();
+  if (publishWorker) {
+    await publishWorker.close();
+  }
+  if (publishQueue) {
+    await publishQueue.close();
+  }
 }
