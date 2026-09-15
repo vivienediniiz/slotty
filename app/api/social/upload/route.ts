@@ -33,7 +33,6 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     url: blob.url,
-    size: blob.size,
     contentType: file.type
   });
 }
