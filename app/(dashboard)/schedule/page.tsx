@@ -50,15 +50,22 @@ export default function SchedulePage() {
 
       if (!response.ok) {
         const error = await response.json();
+        console.error("API Error:", error);
         throw new Error(error.error || "Falha ao agendar publicação");
       }
+
+      console.log("✅ Post agendado com sucesso!");
 
       // Sucesso — redirecionar para posts agendados
       setContent("");
       setMedia([]);
       setDate("");
       setTime("09:00");
-      router.push("/scheduled-posts");
+
+      // Aguardar um pouco antes de redirecionar
+      setTimeout(() => {
+        router.push("/scheduled-posts");
+      }, 500);
     } catch (err) {
       console.error("Erro ao agendar:", err);
       alert(`Erro ao agendar: ${err instanceof Error ? err.message : "Tente novamente"}`);
