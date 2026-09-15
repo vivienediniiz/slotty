@@ -30,7 +30,7 @@ export async function POST(request: Request) {
     const params = new URLSearchParams({
       client_id: config.appId,
       redirect_uri: getCallbackUrl(),
-      scope: "pages_manage_posts,pages_read_engagement",
+      scope: "public_profile",
       state
     });
 
