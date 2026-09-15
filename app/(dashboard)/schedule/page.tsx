@@ -24,6 +24,46 @@ export default function SchedulePage() {
   const [media, setMedia] = useState<MediaItem[]>([]);
   const [date, setDate] = useState("");
   const [time, setTime] = useState("09:00");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  async function handleSchedulePost() {
+    if (!content.trim() || selectedProfileIds.length === 0) return;
+
+    setIsSubmitting(true);
+    try {
+      const scheduledDateTime = date && time ? new Date(`${date}T${time}`) : new Date();
+
+      const response = await fetch("/api/social/posts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          content: content.trim(),
+          scheduledFor: scheduledDateTime.toISOString(),
+          timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+          hashtags: [],
+          media: media.map((m) => ({ url: m.previewUrl, type: m.type.toUpperCase() })),
+          accountIds: selectedProfileIds
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Falha ao agendar publicação");
+      }
+
+      // Sucesso — limpar formulário
+      setContent("");
+      setMedia([]);
+      setDate("");
+      setTime("09:00");
+      alert("Publicação agendada com sucesso!");
+    } catch (err) {
+      console.error("Erro ao agendar:", err);
+      alert(`Erro ao agendar: ${err instanceof Error ? err.message : "Tente novamente"}`);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
 
   return (
     <main className="flex h-screen flex-col">
@@ -32,8 +72,11 @@ export default function SchedulePage() {
           <h1 className="text-xl font-bold">Painel de Agendamento</h1>
           <p className="text-xs text-brand-muted">Menos tempo agendando, mais tempo criando.</p>
         </div>
-        <GradientButton disabled={!content || selectedProfileIds.length === 0}>
-          Agendar publicação
+        <GradientButton
+          onClick={handleSchedulePost}
+          disabled={!content || selectedProfileIds.length === 0 || isSubmitting}
+        >
+          {isSubmitting ? "Agendando..." : "Agendar publicação"}
         </GradientButton>
       </header>
 

@@ -20,27 +20,27 @@ export async function POST(request: Request) {
   }
 
   const body = await request.json();
-  const { content, scheduledFor, timezone, hashtags, media, platforms } = body;
+  const { content, scheduledFor, timezone, hashtags, media, accountIds } = body;
 
   if (!content?.trim()) {
     return NextResponse.json({ error: "Content is required" }, { status: 400 });
   }
 
-  if (!platforms || platforms.length === 0) {
-    return NextResponse.json({ error: "At least one platform is required" }, { status: 400 });
+  if (!accountIds || accountIds.length === 0) {
+    return NextResponse.json({ error: "At least one social account is required" }, { status: 400 });
   }
 
-  // Buscar contas sociais do usuário para as plataformas selecionadas
+  // Buscar contas sociais do usuário, garantindo que pertencem a ele
   const socialAccounts = await prisma.socialAccount.findMany({
     where: {
       userId: user.id,
-      platform: { in: platforms }
+      id: { in: accountIds }
     }
   });
 
   if (socialAccounts.length === 0) {
     return NextResponse.json(
-      { error: "No social accounts connected for selected platforms" },
+      { error: "No valid social accounts found for the selected profiles" },
       { status: 400 }
     );
   }
