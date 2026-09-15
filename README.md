@@ -96,3 +96,4 @@ types/
 - Fluxo OAuth real por rede social (Instagram Graph API, Facebook Login, LinkedIn, Threads API) para popular `SocialAccount`.
 - Job/queue (ex: BullMQ, cron) para efetivamente publicar os posts agendados na `scheduledFor`.
 - Upload de mídia para um storage (S3/Cloudinary) em vez de `URL.createObjectURL` (hoje só local, para preview).
+// Rebuild trigger Tue Sep 15 15:50:36     2026
