@@ -5,9 +5,7 @@ export const SOCIAL_CONFIG = {
   FACEBOOK: {
     appId: process.env.FACEBOOK_APP_ID || "",
     appSecret: process.env.FACEBOOK_APP_SECRET || "",
-    // pages_manage_posts/pages_read_engagement exigem App Review da Meta;
-    // usando public_profile por enquanto até a publicação real ser implementada
-    scope: ["public_profile"],
+    scope: ["public_profile", "pages_show_list", "pages_read_engagement", "pages_manage_posts"],
     authUrl: "https://www.facebook.com/v18.0/dialog/oauth",
     tokenUrl: "https://graph.facebook.com/v18.0/oauth/access_token"
   },
