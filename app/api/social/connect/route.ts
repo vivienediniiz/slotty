@@ -25,12 +25,12 @@ export async function POST(request: Request) {
 
   const config = SOCIAL_CONFIG[platform as keyof typeof SOCIAL_CONFIG];
 
-  // Se tiver credenciais reais, usar OAuth real. Senão, usar mock
-  if (platform === "FACEBOOK" && config.appId && config.appSecret) {
+  // Se tiver credenciais reais e uma URL de autorização, usar OAuth real. Senão, usar mock
+  if (config.appId && config.appSecret && config.authUrl) {
     const params = new URLSearchParams({
       client_id: config.appId,
       redirect_uri: getCallbackUrl(),
-      scope: "public_profile,pages_show_list,pages_read_engagement,pages_manage_posts",
+      scope: config.scope.join(","),
       state
     });
 

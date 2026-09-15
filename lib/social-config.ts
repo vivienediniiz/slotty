@@ -10,11 +10,13 @@ export const SOCIAL_CONFIG = {
     tokenUrl: "https://graph.facebook.com/v18.0/oauth/access_token"
   },
   INSTAGRAM: {
-    appId: process.env.INSTAGRAM_APP_ID || "",
-    appSecret: process.env.INSTAGRAM_APP_SECRET || "",
-    scope: ["instagram_business_basic", "instagram_business_manage_messages"],
-    authUrl: "https://api.instagram.com/oauth/authorize",
-    tokenUrl: "https://graph.instagram.com/v18.0/access_token"
+    // Instagram Graph API (contas business) usa o mesmo app do Facebook,
+    // vinculado a uma Página do Facebook com uma conta profissional do Instagram
+    appId: process.env.FACEBOOK_APP_ID || "",
+    appSecret: process.env.FACEBOOK_APP_SECRET || "",
+    scope: ["instagram_basic", "instagram_content_publish", "pages_show_list", "pages_read_engagement"],
+    authUrl: "https://www.facebook.com/v18.0/dialog/oauth",
+    tokenUrl: "https://graph.facebook.com/v18.0/oauth/access_token"
   },
   LINKEDIN: {
     appId: process.env.LINKEDIN_APP_ID || "",
@@ -24,12 +26,11 @@ export const SOCIAL_CONFIG = {
     tokenUrl: "https://www.linkedin.com/oauth/v2/accessToken"
   },
   THREADS: {
-    // Threads ainda não tem OAuth público, usar Meta's Business SDK
-    appId: process.env.FACEBOOK_APP_ID || "",
-    appSecret: process.env.FACEBOOK_APP_SECRET || "",
-    scope: ["instagram_business_basic"],
-    authUrl: "", // Via Facebook OAuth
-    tokenUrl: ""
+    appId: process.env.THREADS_APP_ID || "",
+    appSecret: process.env.THREADS_APP_SECRET || "",
+    scope: ["threads_basic", "threads_content_publish"],
+    authUrl: "https://threads.net/oauth/authorize",
+    tokenUrl: "https://graph.threads.net/oauth/access_token"
   }
 };
 

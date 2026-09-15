@@ -13,6 +13,38 @@ const MOCK_ACCOUNTS = {
   THREADS: { displayName: "@agenciadiniz.threads" }
 };
 
+async function fetchDisplayName(platform: string, accessToken: string): Promise<string | null> {
+  try {
+    if (platform === "FACEBOOK") {
+      const res = await fetch(`https://graph.facebook.com/me?fields=name&access_token=${accessToken}`);
+      const data = await res.json();
+      return data.name || null;
+    }
+
+    if (platform === "INSTAGRAM") {
+      // Busca as Páginas do Facebook do usuário e a conta profissional do Instagram vinculada
+      const pagesRes = await fetch(
+        `https://graph.facebook.com/v18.0/me/accounts?fields=instagram_business_account{username}&access_token=${accessToken}`
+      );
+      const pagesData = await pagesRes.json();
+      const pageWithInstagram = pagesData.data?.find((page: { instagram_business_account?: { username: string } }) => page.instagram_business_account);
+      const username = pageWithInstagram?.instagram_business_account?.username;
+      return username ? `@${username}` : null;
+    }
+
+    if (platform === "THREADS") {
+      const res = await fetch(`https://graph.threads.net/v1.0/me?fields=username&access_token=${accessToken}`);
+      const data = await res.json();
+      return data.username ? `@${data.username}` : null;
+    }
+
+    return null;
+  } catch (err) {
+    console.error(`Failed to fetch display name for ${platform}:`, err);
+    return null;
+  }
+}
+
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.email) {
@@ -56,7 +88,7 @@ export async function GET(request: Request) {
     let accessToken = "mock_token_" + Date.now();
 
     // Se tiver credenciais reais e recebeu código, trocar por token real
-    if (platform === "FACEBOOK" && config.appId && config.appSecret && code) {
+    if (config.appId && config.appSecret && config.tokenUrl && code) {
       try {
         const tokenResponse = await fetch(config.tokenUrl, {
           method: "POST",
@@ -65,6 +97,7 @@ export async function GET(request: Request) {
             client_id: config.appId,
             client_secret: config.appSecret,
             redirect_uri: getCallbackUrl(),
+            grant_type: "authorization_code",
             code
           }).toString()
         });
@@ -73,22 +106,16 @@ export async function GET(request: Request) {
 
         if (tokenData.access_token) {
           accessToken = tokenData.access_token;
-
-          // Busca informações do usuário no Facebook
-          const meResponse = await fetch(
-            `https://graph.facebook.com/me?fields=name,picture&access_token=${accessToken}`
-          );
-          const meData = await meResponse.json();
-
-          if (meData.name) {
-            displayName = meData.name;
+          const fetchedName = await fetchDisplayName(platform, accessToken);
+          if (fetchedName) {
+            displayName = fetchedName;
           }
         } else {
           // Fallback para mock se falhar
-          console.warn("Facebook token exchange failed, using mock", tokenData);
+          console.warn(`${platform} token exchange failed, using mock`, tokenData);
         }
-      } catch (fbError) {
-        console.error("Facebook API error:", fbError);
+      } catch (apiError) {
+        console.error(`${platform} API error:`, apiError);
         // Fallback para mock
       }
     }
