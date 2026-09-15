@@ -111,7 +111,7 @@ export async function GET(request: Request) {
       await prisma.socialAccount.create({
         data: {
           userId: user.id,
-          platform,
+          platform: platform as "INSTAGRAM" | "FACEBOOK" | "LINKEDIN" | "THREADS",
           displayName,
           accessToken,
           isConnected: true
