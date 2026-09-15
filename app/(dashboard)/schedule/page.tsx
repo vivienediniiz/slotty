@@ -27,6 +27,7 @@ export default function SchedulePage() {
   const [date, setDate] = useState("");
   const [time, setTime] = useState("09:00");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   async function handleSchedulePost() {
     if (!content.trim() || selectedProfileIds.length === 0) return;
@@ -56,16 +57,17 @@ export default function SchedulePage() {
 
       console.log("✅ Post agendado com sucesso!");
 
-      // Sucesso — redirecionar para posts agendados
+      // Sucesso — mostrar overlay e redirecionar
+      setShowSuccess(true);
       setContent("");
       setMedia([]);
       setDate("");
       setTime("09:00");
 
-      // Aguardar um pouco antes de redirecionar
+      // Redirecionar após 2 segundos
       setTimeout(() => {
         router.push("/scheduled-posts");
-      }, 500);
+      }, 2000);
     } catch (err) {
       console.error("Erro ao agendar:", err);
       alert(`Erro ao agendar: ${err instanceof Error ? err.message : "Tente novamente"}`);
@@ -115,6 +117,24 @@ export default function SchedulePage() {
           />
         </section>
       </div>
+
+      {/* Overlay de sucesso */}
+      {showSuccess && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl p-8 text-center max-w-sm">
+            <div className="mb-4">
+              <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            </div>
+            <h2 className="text-2xl font-bold text-brand-ink mb-2">Post agendado! ✨</h2>
+            <p className="text-brand-muted mb-6">Sua publicação será postada no horário agendado</p>
+            <p className="text-sm text-brand-muted">Redirecionando para Posts Agendados...</p>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
