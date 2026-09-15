@@ -100,10 +100,12 @@ export async function POST(request: Request) {
   });
 
   // Agendar publicação na Job Queue
-  try {
-    await schedulePostPublish(post.id, user.id, new Date(post.scheduledFor));
-  } catch (err) {
-    console.error("Failed to schedule job:", err);
+  if (post.scheduledFor) {
+    try {
+      await schedulePostPublish(post.id, user.id, new Date(post.scheduledFor));
+    } catch (err) {
+      console.error("Failed to schedule job:", err);
+    }
   }
 
   return NextResponse.json(post, { status: 201 });
