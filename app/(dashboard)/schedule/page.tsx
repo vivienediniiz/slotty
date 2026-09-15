@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { GradientButton } from "@/components/ui/GradientButton";
 import { ProfileSelector } from "@/components/schedule/ProfileSelector";
 import { PostTextArea } from "@/components/schedule/PostTextArea";
@@ -18,6 +19,7 @@ const CHAR_LIMIT: Record<Platform, number> = {
 };
 
 export default function SchedulePage() {
+  const router = useRouter();
   const [selectedProfileIds, setSelectedProfileIds] = useState<string[]>([]);
   const [content, setContent] = useState("");
   const [channel, setChannel] = useState<Platform>("instagram");
@@ -51,12 +53,12 @@ export default function SchedulePage() {
         throw new Error(error.error || "Falha ao agendar publicação");
       }
 
-      // Sucesso — limpar formulário
+      // Sucesso — redirecionar para posts agendados
       setContent("");
       setMedia([]);
       setDate("");
       setTime("09:00");
-      alert("Publicação agendada com sucesso!");
+      router.push("/scheduled-posts");
     } catch (err) {
       console.error("Erro ao agendar:", err);
       alert(`Erro ao agendar: ${err instanceof Error ? err.message : "Tente novamente"}`);
