@@ -29,7 +29,7 @@ export async function POST(request: Request) {
   if (platform === "FACEBOOK" && config.appId && config.appSecret) {
     const params = new URLSearchParams({
       client_id: config.appId,
-      redirect_uri: getCallbackUrl(platform),
+      redirect_uri: getCallbackUrl(),
       scope: "pages_manage_posts,pages_read_engagement",
       state
     });

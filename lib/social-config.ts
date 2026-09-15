@@ -33,7 +33,7 @@ export const SOCIAL_CONFIG = {
   }
 };
 
-export function getCallbackUrl(platform: string): string {
+export function getCallbackUrl(): string {
   const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-  return `${baseUrl}/api/social/callback?platform=${platform.toUpperCase()}`;
+  return `${baseUrl}/api/social/callback`;
 }

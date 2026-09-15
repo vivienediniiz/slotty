@@ -22,7 +22,6 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const code = url.searchParams.get("code");
   const state = url.searchParams.get("state");
-  const platform = url.searchParams.get("platform");
   const error = url.searchParams.get("error");
 
   // Usuário rejeitou permissões
@@ -30,15 +29,16 @@ export async function GET(request: Request) {
     return NextResponse.redirect(new URL(`/connections?error=${error}`, request.url));
   }
 
-  if (!code || !state || !platform) {
+  if (!code || !state) {
     return NextResponse.redirect(new URL("/connections?error=invalid_params", request.url));
   }
 
   try {
     const stateData = JSON.parse(Buffer.from(state, "base64").toString());
+    const platform = stateData.platform;
 
     // Valida state (proteção CSRF)
-    if (stateData.userId !== session.user.email) {
+    if (stateData.userId !== session.user.email || !platform) {
       return NextResponse.redirect(new URL("/connections?error=invalid_state", request.url));
     }
 
@@ -64,7 +64,7 @@ export async function GET(request: Request) {
           body: new URLSearchParams({
             client_id: config.appId,
             client_secret: config.appSecret,
-            redirect_uri: getCallbackUrl(platform),
+            redirect_uri: getCallbackUrl(),
             code
           }).toString()
         });
