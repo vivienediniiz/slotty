@@ -11,20 +11,46 @@ type Props = {
 export function MediaDropzone({ media, onChange }: Props) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const [uploading, setUploading] = useState(false);
 
-  function filesToMedia(files: FileList | File[]): MediaItem[] {
-    return Array.from(files)
-      .filter((file) => file.type.startsWith("image/") || file.type.startsWith("video/"))
-      .map((file) => ({
-        id: `${file.name}-${file.lastModified}-${Math.random().toString(36).slice(2, 7)}`,
-        file,
-        previewUrl: URL.createObjectURL(file),
-        type: file.type.startsWith("video/") ? ("video" as const) : ("image" as const)
-      }));
+  async function uploadFiles(files: FileList | File[]) {
+    setUploading(true);
+    const newMedia: MediaItem[] = [];
+
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/") && !file.type.startsWith("video/")) continue;
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      try {
+        const res = await fetch("/api/social/upload", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!res.ok) throw new Error("Upload failed");
+
+        const data = await res.json();
+        newMedia.push({
+          id: data.url,
+          file,
+          previewUrl: data.url,
+          type: file.type.startsWith("video/") ? ("video" as const) : ("image" as const)
+        });
+      } catch (err) {
+        console.error("Upload error:", err);
+      }
+    }
+
+    if (newMedia.length > 0) {
+      onChange([...media, ...newMedia]);
+    }
+    setUploading(false);
   }
 
   function addFiles(files: FileList | File[]) {
-    onChange([...media, ...filesToMedia(files)]);
+    uploadFiles(files);
   }
 
   function removeMedia(id: string) {
