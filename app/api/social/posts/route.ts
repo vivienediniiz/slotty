@@ -30,6 +30,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "At least one platform is required" }, { status: 400 });
   }
 
+  // Buscar contas sociais do usuário para as plataformas selecionadas
+  const socialAccounts = await prisma.socialAccount.findMany({
+    where: {
+      userId: user.id,
+      platform: { in: platforms }
+    }
+  });
+
+  if (socialAccounts.length === 0) {
+    return NextResponse.json(
+      { error: "No social accounts connected for selected platforms" },
+      { status: 400 }
+    );
+  }
+
   const post = await prisma.post.create({
     data: {
       userId: user.id,
@@ -46,8 +61,8 @@ export async function POST(request: Request) {
         }))
       },
       channels: {
-        create: platforms.map((platform: string) => ({
-          socialAccountId: "", // será preenchido ao publicar
+        create: socialAccounts.map((account) => ({
+          socialAccountId: account.id,
           status: "SCHEDULED"
         }))
       }
