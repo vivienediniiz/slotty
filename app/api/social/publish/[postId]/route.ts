@@ -12,10 +12,16 @@ async function publishToFacebook(token: string, content: string) {
       }).toString()
     });
     const data = await res.json();
+
+    if (data.error) {
+      console.error("Facebook API Error:", data.error);
+      throw new Error(data.error.message || "Facebook API Error");
+    }
+
     return data.id || null;
   } catch (err) {
     console.error("Facebook publish error:", err);
-    return null;
+    throw err;
   }
 }
 
@@ -133,7 +139,7 @@ export async function POST(
           status: externalPostId ? "PUBLISHED" : "FAILED",
           externalPostId: externalPostId || undefined,
           publishedAt: externalPostId ? now : undefined,
-          errorMessage: externalPostId ? undefined : "Failed to publish"
+          errorMessage: externalPostId ? undefined : (externalPostId === null ? "API returned null" : "Failed to publish")
         }
       });
 
