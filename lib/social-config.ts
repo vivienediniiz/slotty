@@ -22,9 +22,10 @@ export const SOCIAL_CONFIG = {
   LINKEDIN: {
     appId: process.env.LINKEDIN_APP_ID || "",
     appSecret: process.env.LINKEDIN_APP_SECRET || "",
-    // openid/profile/email vêm do produto "Sign In with LinkedIn using OpenID Connect";
-    // w_member_social vem do "Share on LinkedIn" (ambos já habilitados no app)
-    scope: ["openid", "profile", "email", "w_member_social"],
+    // openid/profile/email exigem o app verificado/aprovado no produto "Sign In with
+    // LinkedIn using OpenID Connect"; usando só w_member_social (já autorizado) por
+    // enquanto até isso ser confirmado
+    scope: ["w_member_social"],
     authUrl: "https://www.linkedin.com/oauth/v2/authorization",
     tokenUrl: "https://www.linkedin.com/oauth/v2/accessToken"
   },
