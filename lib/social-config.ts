@@ -14,7 +14,8 @@ export const SOCIAL_CONFIG = {
     // vinculado a uma Página do Facebook com uma conta profissional do Instagram
     appId: process.env.FACEBOOK_APP_ID || "",
     appSecret: process.env.FACEBOOK_APP_SECRET || "",
-    scope: ["instagram_basic", "instagram_content_publish", "pages_show_list", "pages_read_engagement"],
+    // instagram_content_publish exige App Review; adicionar quando a publicação real for implementada
+    scope: ["instagram_basic", "pages_show_list", "pages_read_engagement"],
     authUrl: "https://www.facebook.com/v18.0/dialog/oauth",
     tokenUrl: "https://graph.facebook.com/v18.0/oauth/access_token"
   },
@@ -28,7 +29,8 @@ export const SOCIAL_CONFIG = {
   THREADS: {
     appId: process.env.THREADS_APP_ID || "",
     appSecret: process.env.THREADS_APP_SECRET || "",
-    scope: ["threads_basic", "threads_content_publish"],
+    // threads_content_publish exige App Review; adicionar quando a publicação real for implementada
+    scope: ["threads_basic"],
     authUrl: "https://threads.net/oauth/authorize",
     tokenUrl: "https://graph.threads.net/oauth/access_token"
   }
