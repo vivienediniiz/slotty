@@ -1,5 +1,7 @@
 # Supabase configuration
 
 [functions.publish-posts]
-# Run every 5 minutes
-cron = "*/5 * * * *"
+# O agendamento NÃO é configurado aqui. Esta chave não existe no config.toml e
+# era ignorada silenciosamente. O agendamento real vive no banco, via pg_cron —
+# veja functions/publish-posts/README.md.
+verify_jwt = true
