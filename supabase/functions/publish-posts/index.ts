@@ -127,11 +127,11 @@ Deno.serve(async (req) => {
         postChannels:post_channels(
           id,
           status,
-          socialAccountId:social_account_id,
+          socialAccountId,
           socialAccount:social_accounts(
             id,
             platform,
-            accessToken:access_token
+            accessToken
           )
         )
       `
@@ -148,6 +148,8 @@ Deno.serve(async (req) => {
     let failed = 0;
 
     for (const post of posts || []) {
+      let postPublished = 0;
+
       for (const channel of post.postChannels || []) {
         if (!channel.socialAccount) continue;
 
@@ -169,6 +171,7 @@ Deno.serve(async (req) => {
 
           if (externalPostId) {
             published++;
+            postPublished++;
           } else {
             failed++;
             error = "API returned null";
@@ -184,9 +187,9 @@ Deno.serve(async (req) => {
           .from("post_channels")
           .update({
             status: externalPostId ? "PUBLISHED" : "FAILED",
-            external_post_id: externalPostId,
-            published_at: externalPostId ? now.toISOString() : null,
-            error_message: error
+            externalPostId: externalPostId,
+            publishedAt: externalPostId ? now.toISOString() : null,
+            errorMessage: error
           })
           .eq("id", channel.id);
 
@@ -203,7 +206,7 @@ Deno.serve(async (req) => {
         const { error: postUpdateError } = await supabase
           .from("posts")
           .update({
-            status: published > 0 ? "PUBLISHED" : "FAILED"
+            status: postPublished > 0 ? "PUBLISHED" : "FAILED"
           })
           .eq("id", post.id);
 
