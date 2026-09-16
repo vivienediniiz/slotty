@@ -13,29 +13,86 @@ const MOCK_ACCOUNTS = {
   THREADS: { displayName: "@agenciadiniz.threads" }
 };
 
-async function fetchDisplayName(platform: string, accessToken: string): Promise<string | null> {
-  try {
-    if (platform === "FACEBOOK") {
-      const res = await fetch(`https://graph.facebook.com/me?fields=name&access_token=${accessToken}`);
-      const data = await res.json();
-      return data.name || null;
-    }
+type ResolvedAccount = {
+  displayName: string;
+  accessToken: string;
+  externalId: string | null;
+};
 
-    if (platform === "INSTAGRAM") {
-      // Busca as Páginas do Facebook do usuário e a conta profissional do Instagram vinculada
-      const pagesRes = await fetch(
-        `https://graph.facebook.com/v18.0/me/accounts?fields=instagram_business_account{username}&access_token=${accessToken}`
+// Tokens de Página herdam a validade do token de usuário que os gerou. Sem trocar
+// pelo de longa duração primeiro, o token morre em ~1h e todo agendamento falha.
+async function exchangeForLongLivedToken(
+  appId: string,
+  appSecret: string,
+  shortLivedToken: string
+): Promise<string> {
+  const res = await fetch(
+    `https://graph.facebook.com/v18.0/oauth/access_token?${new URLSearchParams({
+      grant_type: "fb_exchange_token",
+      client_id: appId,
+      client_secret: appSecret,
+      fb_exchange_token: shortLivedToken
+    })}`
+  );
+  const data = await res.json();
+  return data.access_token || shortLivedToken;
+}
+
+async function resolveAccount(
+  platform: string,
+  accessToken: string,
+  appId: string,
+  appSecret: string
+): Promise<ResolvedAccount | null> {
+  try {
+    // Facebook e Instagram publicam via Página, nunca via perfil pessoal.
+    if (platform === "FACEBOOK" || platform === "INSTAGRAM") {
+      const userToken = await exchangeForLongLivedToken(appId, appSecret, accessToken);
+      const res = await fetch(
+        `https://graph.facebook.com/v18.0/me/accounts?fields=id,name,access_token,instagram_business_account{id,username}&access_token=${userToken}`
       );
-      const pagesData = await pagesRes.json();
-      const pageWithInstagram = pagesData.data?.find((page: { instagram_business_account?: { username: string } }) => page.instagram_business_account);
-      const username = pageWithInstagram?.instagram_business_account?.username;
-      return username ? `@${username}` : null;
+      const data = await res.json();
+
+      if (data.error) {
+        console.error(`${platform} /me/accounts error:`, data.error);
+        return null;
+      }
+
+      type Page = {
+        id: string;
+        name: string;
+        access_token: string;
+        instagram_business_account?: { id: string; username: string };
+      };
+      const pages: Page[] = data.data || [];
+
+      if (platform === "FACEBOOK") {
+        // MVP: usa a primeira Página. Se houver várias, vale deixar o usuário escolher.
+        const page = pages[0];
+        if (!page) return null;
+        return {
+          displayName: page.name,
+          accessToken: page.access_token,
+          externalId: page.id
+        };
+      }
+
+      const pageWithInstagram = pages.find((page) => page.instagram_business_account);
+      const instagram = pageWithInstagram?.instagram_business_account;
+      if (!pageWithInstagram || !instagram) return null;
+      return {
+        displayName: `@${instagram.username}`,
+        // Publicação no Instagram é autenticada com o token da Página vinculada.
+        accessToken: pageWithInstagram.access_token,
+        externalId: instagram.id
+      };
     }
 
     if (platform === "THREADS") {
-      const res = await fetch(`https://graph.threads.net/v1.0/me?fields=username&access_token=${accessToken}`);
+      const res = await fetch(`https://graph.threads.net/v1.0/me?fields=id,username&access_token=${accessToken}`);
       const data = await res.json();
-      return data.username ? `@${data.username}` : null;
+      if (!data.username) return null;
+      return { displayName: `@${data.username}`, accessToken, externalId: data.id || null };
     }
 
     if (platform === "LINKEDIN") {
@@ -44,12 +101,14 @@ async function fetchDisplayName(platform: string, accessToken: string): Promise<
         headers: { Authorization: `Bearer ${accessToken}` }
       });
       const data = await res.json();
-      return data.name || null;
+      if (!data.name) return null;
+      // sub = URN do membro, obrigatório para publicar via /v2/ugcPosts
+      return { displayName: data.name, accessToken, externalId: data.sub || null };
     }
 
     return null;
   } catch (err) {
-    console.error(`Failed to fetch display name for ${platform}:`, err);
+    console.error(`Failed to resolve account for ${platform}:`, err);
     return null;
   }
 }
@@ -93,8 +152,10 @@ export async function GET(request: Request) {
     }
 
     const config = SOCIAL_CONFIG[platform as keyof typeof SOCIAL_CONFIG];
+    const requiresPage = platform === "FACEBOOK" || platform === "INSTAGRAM";
     let displayName = MOCK_ACCOUNTS[platform as keyof typeof MOCK_ACCOUNTS]?.displayName || "";
     let accessToken = "mock_token_" + Date.now();
+    let externalId: string | null = null;
 
     // Se tiver credenciais reais e recebeu código, trocar por token real
     if (config.appId && config.appSecret && config.tokenUrl && code) {
@@ -114,17 +175,34 @@ export async function GET(request: Request) {
         const tokenData = await tokenResponse.json();
 
         if (tokenData.access_token) {
-          accessToken = tokenData.access_token;
-          const fetchedName = await fetchDisplayName(platform, accessToken);
-          if (fetchedName) {
-            displayName = fetchedName;
+          const resolved = await resolveAccount(
+            platform,
+            tokenData.access_token,
+            config.appId,
+            config.appSecret
+          );
+
+          if (resolved) {
+            accessToken = resolved.accessToken;
+            externalId = resolved.externalId;
+            if (resolved.displayName) displayName = resolved.displayName;
+          } else if (requiresPage) {
+            // Sem Página não há como publicar. Salvar um mock aqui criaria uma
+            // conexão que aparenta funcionar e falha silenciosamente no agendamento.
+            return NextResponse.redirect(new URL("/connections?error=no_page", request.url));
           }
+        } else if (requiresPage) {
+          console.error(`${platform} token exchange failed`, tokenData);
+          return NextResponse.redirect(new URL("/connections?error=token_exchange", request.url));
         } else {
           // Fallback para mock se falhar
           console.warn(`${platform} token exchange failed, using mock`, tokenData);
         }
       } catch (apiError) {
         console.error(`${platform} API error:`, apiError);
+        if (requiresPage) {
+          return NextResponse.redirect(new URL("/connections?error=server_error", request.url));
+        }
         // Fallback para mock
       }
     }
@@ -141,6 +219,7 @@ export async function GET(request: Request) {
         data: {
           displayName,
           accessToken,
+          externalId,
           isConnected: true
         }
       });
@@ -152,6 +231,7 @@ export async function GET(request: Request) {
           platform: platform as "INSTAGRAM" | "FACEBOOK" | "LINKEDIN" | "THREADS",
           displayName,
           accessToken,
+          externalId,
           isConnected: true
         }
       });

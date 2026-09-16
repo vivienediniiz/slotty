@@ -14,8 +14,14 @@ export const SOCIAL_CONFIG = {
     // vinculado a uma Página do Facebook com uma conta profissional do Instagram
     appId: process.env.FACEBOOK_APP_ID || "",
     appSecret: process.env.FACEBOOK_APP_SECRET || "",
-    // instagram_content_publish exige App Review; adicionar quando a publicação real for implementada
-    scope: ["instagram_basic", "pages_show_list", "pages_read_engagement"],
+    // instagram_content_publish só exige App Review para atender terceiros; em modo
+    // Desenvolvimento funciona para quem tem cargo no app
+    scope: [
+      "instagram_basic",
+      "instagram_content_publish",
+      "pages_show_list",
+      "pages_read_engagement"
+    ],
     authUrl: "https://www.facebook.com/v18.0/dialog/oauth",
     tokenUrl: "https://graph.facebook.com/v18.0/oauth/access_token"
   },

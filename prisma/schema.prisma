@@ -102,6 +102,9 @@ model SocialAccount {
   platform     SocialPlatform
   displayName  String // ex: "@agenciadiniz"
   avatarUrl    String?
+  // Alvo da publicação: Page ID (Facebook) ou Instagram Business Account ID.
+  // A Meta não permite publicar em perfil pessoal desde a remoção de publish_actions.
+  externalId   String?
   accessToken  String         @db.Text
   refreshToken String?        @db.Text
   tokenExpires DateTime?
